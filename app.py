@@ -97,6 +97,22 @@ else:
 st.divider()
 
 # ---------------------------------------------------------------------------
+# Filter controls
+# ---------------------------------------------------------------------------
+st.subheader("Filter Tasks")
+col1, col2 = st.columns(2)
+with col1:
+    filter_pet = st.selectbox(
+        "Filter by pet",
+        ["All"] + [p.name for p in owner.pets]
+    )
+with col2:
+    filter_status = st.selectbox(
+        "Filter by status",
+        ["All", "Incomplete", "Complete"]
+    )
+
+# ---------------------------------------------------------------------------
 # Generate Schedule
 # ---------------------------------------------------------------------------
 st.subheader("Today's Schedule")
@@ -108,8 +124,13 @@ if st.button("Generate Schedule"):
         st.info("No tasks yet — add some above!")
     else:
         scheduler = Scheduler(owner)
-        sorted_tasks = scheduler.sort_by_time()
-        conflicts    = scheduler.detect_conflicts()
+        # Apply filters
+        filtered = scheduler.filter_tasks(
+            pet_name=None if filter_pet == "All" else filter_pet,
+            completed=None if filter_status == "All" else (filter_status == "Complete"),
+        )
+        sorted_tasks = scheduler.sort_by_time(filtered)
+        conflicts    = scheduler.detect_conflicts(filtered)
 
         # Conflict warnings
         if conflicts:
@@ -118,17 +139,23 @@ if st.button("Generate Schedule"):
         else:
             st.success("No scheduling conflicts found!")
 
-        # Schedule table
+        # Schedule table with complete buttons
         priority_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}
-        rows = [
-            {
-                "Priority": priority_icon.get(t.priority, "⚪"),
-                "Time":     t.time,
-                "Task":     t.description,
-                "Pet":      t.pet_name,
-                "Frequency": t.frequency,
-                "Done":     "✓" if t.completed else "○",
-            }
-            for t in sorted_tasks
-        ]
-        st.table(rows)
+        for i, task in enumerate(sorted_tasks):
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                icon = priority_icon.get(task.priority, "⚪")
+                status = "✓" if task.completed else "○"
+                st.write(f"{icon} `{task.time}` — **{task.description}** ({task.pet_name}, {task.frequency}) [{status}]")
+            with col2:
+                if not task.completed:
+                    if st.button("Complete", key=f"complete_{i}"):
+                        next_task = scheduler.handle_recurring(task)
+                        if next_task:
+                            # Add the new occurrence to the correct pet
+                            pet_obj = next(p for p in owner.pets if p.name == task.pet_name)
+                            pet_obj.add_task(next_task)
+                            st.success(f"✓ Done! Next '{task.description}' scheduled.")
+                        else:
+                            st.success(f"✓ '{task.description}' marked complete!")
+                        st.rerun()

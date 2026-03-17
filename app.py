@@ -9,9 +9,10 @@ from pawpal_system import Owner, Pet, Task, Scheduler
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 st.title("🐾 PawPal+")
+st.caption("A smart pet care scheduling assistant.")
 
 # ---------------------------------------------------------------------------
-# Session state — keeps Owner alive across reruns
+# Session state
 # ---------------------------------------------------------------------------
 if "owner" not in st.session_state:
     st.session_state.owner = None
@@ -20,26 +21,24 @@ if "owner" not in st.session_state:
 # Sidebar — Owner + Pet setup
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.header("Setup")
+    st.header("⚙️ Setup")
 
-    # Owner
     st.subheader("Owner Info")
     owner_name = st.text_input("Owner name", value="Alex")
-    contact = st.text_input("Contact email", value="")
+    contact    = st.text_input("Contact email", value="")
 
-    if st.button("Save Owner"):
+    if st.button("Save Owner", use_container_width=True):
         st.session_state.owner = Owner(name=owner_name, contact=contact)
         st.success(f"Owner '{owner_name}' saved!")
 
-    # Add a pet (only if owner exists)
     if st.session_state.owner:
         st.divider()
         st.subheader("Add a Pet")
-        pet_name    = st.text_input("Pet name", value="Buddy")
-        species     = st.selectbox("Species", ["Dog", "Cat", "Bird", "Other"])
-        age         = st.number_input("Age", min_value=0, max_value=30, value=3)
+        pet_name = st.text_input("Pet name", value="Buddy")
+        species  = st.selectbox("Species", ["Dog", "Cat", "Bird", "Other"])
+        age      = st.number_input("Age", min_value=0, max_value=30, value=3)
 
-        if st.button("Add Pet"):
+        if st.button("Add Pet", use_container_width=True):
             new_pet = Pet(name=pet_name, species=species, age=age)
             st.session_state.owner.add_pet(new_pet)
             st.success(f"Added {pet_name} the {species}!")
@@ -53,20 +52,22 @@ if not st.session_state.owner:
 
 owner = st.session_state.owner
 
-# Show current pets
-st.subheader(f"Pets for {owner.name}")
+# Pets overview
+st.subheader(f"🐾 Pets for {owner.name}")
 if not owner.pets:
     st.info("No pets yet — add one in the sidebar.")
 else:
-    for pet in owner.pets:
-        st.write(f"🐾 **{pet.name}** — {pet.species}, age {pet.age}")
+    cols = st.columns(len(owner.pets))
+    for i, pet in enumerate(owner.pets):
+        with cols[i]:
+            st.metric(label=f"{pet.name}", value=pet.species, delta=f"Age {pet.age}")
 
 st.divider()
 
 # ---------------------------------------------------------------------------
 # Add a Task
 # ---------------------------------------------------------------------------
-st.subheader("Add a Task")
+st.subheader("📋 Add a Task")
 
 if not owner.pets:
     st.warning("Add a pet first before scheduling tasks.")
@@ -82,9 +83,8 @@ else:
         time_input = st.time_input("Time")
         priority   = st.selectbox("Priority", ["low", "medium", "high"], index=1)
 
-    if st.button("Add Task"):
-        # Find the selected pet object
-        pet_obj = next(p for p in owner.pets if p.name == selected_pet)
+    if st.button("➕ Add Task", use_container_width=True):
+        pet_obj  = next(p for p in owner.pets if p.name == selected_pet)
         new_task = Task(
             description=description,
             time=time_input.strftime("%H:%M"),
@@ -99,32 +99,28 @@ st.divider()
 # ---------------------------------------------------------------------------
 # Filter controls
 # ---------------------------------------------------------------------------
-st.subheader("Filter Tasks")
+st.subheader("🔍 Filter Tasks")
 col1, col2 = st.columns(2)
 with col1:
-    filter_pet = st.selectbox(
-        "Filter by pet",
-        ["All"] + [p.name for p in owner.pets]
-    )
+    filter_pet = st.selectbox("Filter by pet", ["All"] + [p.name for p in owner.pets])
 with col2:
-    filter_status = st.selectbox(
-        "Filter by status",
-        ["All", "Incomplete", "Complete"]
-    )
+    filter_status = st.selectbox("Filter by status", ["All", "Incomplete", "Complete"])
+
+st.divider()
 
 # ---------------------------------------------------------------------------
 # Generate Schedule
 # ---------------------------------------------------------------------------
-st.subheader("Today's Schedule")
+st.subheader("📅 Today's Schedule")
 
-if st.button("Generate Schedule"):
+if st.button("🗓️ Generate Schedule", use_container_width=True):
     all_tasks = owner.get_all_tasks()
 
     if not all_tasks:
         st.info("No tasks yet — add some above!")
     else:
         scheduler = Scheduler(owner)
-        # Apply filters
+
         filtered = scheduler.filter_tasks(
             pet_name=None if filter_pet == "All" else filter_pet,
             completed=None if filter_status == "All" else (filter_status == "Complete"),
@@ -137,22 +133,25 @@ if st.button("Generate Schedule"):
             for warning in conflicts:
                 st.warning(warning)
         else:
-            st.success("No scheduling conflicts found!")
+            st.success("✅ No scheduling conflicts found!")
 
-        # Schedule table with complete buttons
+        # Task rows with complete buttons
         priority_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}
+        st.markdown("---")
         for i, task in enumerate(sorted_tasks):
             col1, col2 = st.columns([4, 1])
             with col1:
-                icon = priority_icon.get(task.priority, "⚪")
-                status = "✓" if task.completed else "○"
-                st.write(f"{icon} `{task.time}` — **{task.description}** ({task.pet_name}, {task.frequency}) [{status}]")
+                icon   = priority_icon.get(task.priority, "⚪")
+                status = "✅" if task.completed else "⬜"
+                st.write(
+                    f"{status} {icon} `{task.time}` — **{task.description}** "
+                    f"· {task.pet_name} · *{task.frequency}*"
+                )
             with col2:
                 if not task.completed:
-                    if st.button("Complete", key=f"complete_{i}"):
+                    if st.button("Done ✓", key=f"complete_{i}"):
                         next_task = scheduler.handle_recurring(task)
                         if next_task:
-                            # Add the new occurrence to the correct pet
                             pet_obj = next(p for p in owner.pets if p.name == task.pet_name)
                             pet_obj.add_task(next_task)
                             st.success(f"✓ Done! Next '{task.description}' scheduled.")

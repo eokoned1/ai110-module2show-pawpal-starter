@@ -43,3 +43,79 @@ pip install -r requirements.txt
 7. Refine UML so it matches what you actually built.
 
 
+# 🐾 PawPal+
+
+A smart pet care scheduling assistant built with Python and Streamlit.
+
+## 📸 Demo
+
+<!-- Replace the filename below with your actual screenshot -->
+<a href="/Users/mofe/Desktop/ai110-module2show-pawpal-starter/pawpal_test_ss1.png" target="_blank">
+  <img src='/Users/mofe/Desktop/ai110-module2show-pawpal-starter/pawpal_test_ss2.png' title='PawPal App' width='' alt='PawPal App' class='center-block' />
+</a>
+
+---
+
+## 🚀 Getting Started
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+---
+
+## ✨ Features
+
+- **Owner & pet management** — create an owner and add multiple pets
+- **Task scheduling** — assign tasks with time, priority, and frequency
+- **Sorting by time** — tasks are always displayed in chronological order using a lambda sort on HH:MM strings
+- **Filtering** — filter the schedule by pet name or completion status
+- **Conflict warnings** — the Scheduler detects when two tasks share the same time slot and displays a warning in the UI
+- **Recurring tasks** — daily and weekly tasks automatically reschedule themselves when marked complete using Python's `timedelta`
+- **Priority indicators** — 🔴 High / 🟡 Medium / 🟢 Low color coding on every task
+
+---
+
+## 🧠 Smarter Scheduling
+
+The `Scheduler` class acts as the brain of PawPal+. It never stores data itself — it reads tasks through the `Owner → Pet → Task` chain. Key algorithms:
+
+- **`sort_by_time()`** — uses `sorted()` with a lambda key on the `HH:MM` time string
+- **`filter_tasks()`** — chains pet name and completion status filters
+- **`detect_conflicts()`** — uses a dictionary to track seen time slots; returns warning strings instead of raising exceptions
+- **`handle_recurring()`** — marks a task complete and returns a new `Task` with `due_date + timedelta`
+
+---
+
+## 🧪 Testing PawPal+
+
+```bash
+python -m pytest
+```
+
+Tests cover:
+- Task completion status change
+- Task addition increases pet task count
+- Sorting correctness (chronological order)
+- Daily and weekly recurrence scheduling
+- Conflict detection for duplicate time slots
+- Filtering by pet name and completion status
+
+**Confidence level: ⭐⭐⭐⭐⭐** — all 11 tests pass.
+
+---
+
+## 🗂️ Project Structure
+
+```
+pawpal_system.py   # Backend logic — Owner, Pet, Task, Scheduler classes
+app.py             # Streamlit UI
+main.py            # CLI demo script
+tests/
+  test_pawpal.py   # Automated test suite
+reflection.md      # Design decisions and AI collaboration reflection
+```
+

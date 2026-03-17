@@ -50,9 +50,8 @@ A smart pet care scheduling assistant built with Python and Streamlit.
 ## 📸 Demo
 
 <!-- Replace the filename below with your actual screenshot -->
-<a href="/Users/mofe/Desktop/ai110-module2show-pawpal-starter/pawpal_test_ss1.png" target="_blank">
-  <img src='/Users/mofe/Desktop/ai110-module2show-pawpal-starter/pawpal_test_ss2.png' title='PawPal App' width='' alt='PawPal App' class='center-block' />
-</a>
+![PawPal App](pawpal_test_ss1.png)
+![PawPal App](pawpal_test_ss2.png)
 
 ---
 
